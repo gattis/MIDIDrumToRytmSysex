@@ -82,7 +82,13 @@ def test():
 
 
 def tick_to_trig(tick,resolution):
-    return int(round(tick / (resolution / 4.0)))
+    trig = tick / (resolution / 4.0)
+    major = int(round(trig))
+    remainder = int(round((trig - major) * 25.))
+    if remainder > 23: remainder = 23
+    if remainder < -23: remainder = -23
+    return major,remainder
+
 
 def ticklen_to_notelen(ticklen,resolution):
     min_diff,min_idx = (2048,127)
@@ -162,21 +168,24 @@ def midi_to_rawsyx(infile):
         trigs = [0]*64
         note_lengths = [0]*64
         velocities = [0]*64
+        micro_timings = [0]*64
 
         while i < len(events)-1:
             if type(events[i]) != midi.NoteOnEvent:
                 print "WARN: Off event found before On event"
                 i += 1
             elif type(events[i+1]) == midi.NoteOffEvent:
-                trig = tick_to_trig(events[i].tick, midipattern.resolution)
+                trig,remainder = tick_to_trig(events[i].tick, midipattern.resolution)
                 trigs[trig] = 37123
+                micro_timings[trig] = remainder
                 ticklen = events[i+1].tick - events[i].tick
                 note_lengths[trig] = ticklen_to_notelen(ticklen, midipattern.resolution)
                 velocities[trig] = events[i].velocity
                 i += 2
             else:
-                trig = tick_to_trig(events[i].tick, midipattern.resolution)
+                trig,remainder = tick_to_trig(events[i].tick, midipattern.resolution)
                 trigs[trig] = 37123
+                micro_timings[trig] = remainder
                 note_lengths[trig] = 127
                 velocities[trig] = events[i].velocity
                 i += 1
@@ -185,11 +194,12 @@ def midi_to_rawsyx(infile):
         track.trigs = trigs
         track.note_lengths = note_lengths
         track.velocities = velocities
-        track.pack()
+        track.micro_timings = micro_timings
 
-        out = open(infile+".raw",'wb')
-        out.write(syx.pack())
-        out.close()    
+
+    out = open(infile+".raw",'wb')
+    out.write(syx.pack())
+    out.close()    
 
 if __name__ == "__main__":
     import sys
