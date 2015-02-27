@@ -181,7 +181,7 @@ def midi_to_rawsyx(infile):
                 velocities[trig] = events[i].velocity
                 i += 1
 
-        track = syx.tracks[MIDI_TO_TRACK[note]]
+        track = syx.tracks[MIDI_TO_TRACK[note]-1]
         track.trigs = trigs
         track.note_lengths = note_lengths
         track.velocities = velocities
