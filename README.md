@@ -4,5 +4,9 @@ Converts MIDI drum file(s) to Sysex file(s) containing Pattern(s) for the Elektr
 
 Usage:
   > python midi_to_raw.py example.mid
+  
+  [produces example.mid.raw which libanalogrytm can convert to .syx]
+  
   > ./raw_to_syx example.mid.raw
+  
   [produces example.mid.raw.syx which you can upload to the Analog Rytm using C6]  
