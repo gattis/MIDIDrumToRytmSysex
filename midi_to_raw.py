@@ -21,6 +21,7 @@ MIDI_TO_TRACK = {
     51:12,
     52:11,
     53:12,
+    55:11,
     56:12
 }
 
@@ -159,6 +160,8 @@ def midi_to_rawsyx(infile):
             notes.setdefault(event.pitch,[]).append(event)
         if type(event) == midi.EndOfTrackEvent:
             normlen = int(round(float(event.tick) / midipattern.resolution / 4.0)) * 16
+            if normlen > 64:
+                normlen = 64
             syx.pattern_len = normlen
             for track in syx.tracks:
                 track.num_steps = normlen
@@ -176,25 +179,30 @@ def midi_to_rawsyx(infile):
                 i += 1
             elif type(events[i+1]) == midi.NoteOffEvent:
                 trig,remainder = tick_to_trig(events[i].tick, midipattern.resolution)
-                trigs[trig] = 37123
-                micro_timings[trig] = remainder
-                ticklen = events[i+1].tick - events[i].tick
-                note_lengths[trig] = ticklen_to_notelen(ticklen, midipattern.resolution)
-                velocities[trig] = events[i].velocity
+                if trig < 64:
+                    trigs[trig] = 37123
+                    micro_timings[trig] = remainder
+                    ticklen = events[i+1].tick - events[i].tick
+                    note_lengths[trig] = ticklen_to_notelen(ticklen, midipattern.resolution)
+                    velocities[trig] = events[i].velocity
                 i += 2
             else:
                 trig,remainder = tick_to_trig(events[i].tick, midipattern.resolution)
-                trigs[trig] = 37123
-                micro_timings[trig] = remainder
-                note_lengths[trig] = 127
-                velocities[trig] = events[i].velocity
+                if trig < 64:
+                    trigs[trig] = 37123
+                    micro_timings[trig] = remainder
+                    note_lengths[trig] = 127
+                    velocities[trig] = events[i].velocity
                 i += 1
 
-        track = syx.tracks[MIDI_TO_TRACK[note]-1]
-        track.trigs = trigs
-        track.note_lengths = note_lengths
-        track.velocities = velocities
-        track.micro_timings = micro_timings
+        if note in MIDI_TO_TRACK:
+            track = syx.tracks[MIDI_TO_TRACK[note]-1]
+            track.trigs = trigs
+            track.note_lengths = note_lengths
+            track.velocities = velocities
+            track.micro_timings = micro_timings
+        else:
+            print "WARN: could not map note",note,"to rytm track"
 
 
     out = open(infile+".raw",'wb')
@@ -207,4 +215,5 @@ if __name__ == "__main__":
         test()
     fnames = sys.argv[1:]
     for fname in fnames:
+        print fname
         midi_to_rawsyx(fname)
